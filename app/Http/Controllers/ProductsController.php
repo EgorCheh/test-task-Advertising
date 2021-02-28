@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\ProductsModel;
+use Illuminate\Support\Facades\DB;
 use Ramsey\Uuid\Guid\Fields;
 
 class ProductsController extends Controller
@@ -32,6 +33,7 @@ class ProductsController extends Controller
                 break;
             default:
                 $data=ProductsModel::get(array('title','image','price'));
+
         }
 
         return $data;
@@ -45,10 +47,13 @@ class ProductsController extends Controller
      */
     public function store(Request $request)
     {
-        //validation
+        $validated = $request->validate([
+            'title' => 'max:200',
+            'description' => 'max:1000',
+        ]);
 
         $product =ProductsModel::create($request->all());
-        return $product;
+        return response()->json(['id'=>$product['id']], 200);
 
     }
 
@@ -60,15 +65,45 @@ class ProductsController extends Controller
      */
     public function show($id, Request $request)
     {
-        // show fields
+        if($request->filled('fields')){
 
 
-       /* echo "$id <br>";
-        $fields = $request->input('fields');
-        if(is_array($fields)&count($fields)==1);
-        dd($fields);*/
+            $fields = $request->input('fields');
+            if(!is_array($fields))
+            {
+                switch ($fields){
+                    case 'description':
+                        $data =ProductsModel::where('id',$id)->get(array('title','image','price','description'));
+                        break;
+                    case 'image':
+                        $data =ProductsModel::where('id',$id)->get(array('title','image','price','image1','image2'));
+                        break;
+                    default:
+                        $data =ProductsModel::where('id',$id)->get(array('title','image','price'));
+                }
+            }
+            elseif(count($fields)==2&& in_array("image", $fields)&&in_array("description", $fields)){
 
-        return ProductsModel::find($id);
+                $data = ProductsModel::where('id',$id)->get(array('title','image','price','description','image1','image2'));
+            }
+            else{
+                switch ($fields[0]){
+                    case 'description':
+                        $data =ProductsModel::where('id',$id)->get(array('title','image','price','description'));
+                        break;
+                    case 'image':
+                        $data =ProductsModel::where('id',$id)->get(array('title','image','price','image1','image2'));
+                        break;
+                    default:
+                        $data =ProductsModel::where('id',$id)->get(array('title','image','price'));
+                }
+            }
+        }
+        else{
+            $data =ProductsModel::where('id',$id)->get(array('title','image','price'));
+        }
+
+        return $data;
     }
 
     /**
